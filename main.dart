@@ -4,15 +4,15 @@ import 'package:nyxx/nyxx.dart';
 final api = Uri.parse('https://inspirobot.me/api?generate=true');
 
 void main(List<String> argv) {
-  Nyxx(argv.first, GatewayIntents.allUnprivileged,
-      options: ClientOptions(guildSubscriptions: false))
+  Nyxx(argv.first, GatewayIntents.allUnprivileged)
     ..onMessageReceived.listen((event) async {
       final msg = event.message;
+      final a = msg.author;
       final channel = await msg.channel.getOrDownload();
-      if (msg.content == 'inspire') {
+      if (msg.content.toLowerCase() == 'inspire') {
         final picUrl = (await http.get(api)).body;
-        print('Inspiring: $picUrl');
-        await channel.sendMessage(content: picUrl);
+        final r = await channel.sendMessage(content: picUrl);
+        print('Inspired ${a.username}#${a.discriminator} at ${r.url}: $picUrl');
       }
     });
 }
