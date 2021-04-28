@@ -9,7 +9,9 @@ void main(List<String> argv) {
       final msg = event.message;
       final a = msg.author;
       final channel = await msg.channel.getOrDownload();
-      if (msg.content.toLowerCase() == 'inspire') {
+      final content = msg.content.toLowerCase();
+      if (content == 'inspire' ||
+          (channel.id == Snowflake(836643866358186046) && content == 'i')) {
         final picUrl = (await http.get(api)).body;
         final r = await channel.sendMessage(content: picUrl);
         print('Inspired ${a.username}#${a.discriminator} at ${r.url}: $picUrl');
