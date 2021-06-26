@@ -3,6 +3,13 @@ import 'package:nyxx/nyxx.dart';
 
 final api = Uri.parse('https://inspirobot.me/api?generate=true');
 
+Future<void> inspire(TextChannel c, String u, int d) async {
+  final url = (await http.get(api)).body;
+  final r = await c.sendMessage(MessageBuilder.content(url));
+  r.createReaction(UnicodeEmoji('⏭'));
+  print('Inspired $u#$d at ${r.url}: $url');
+}
+
 void main(List<String> argv) {
   Nyxx(argv.first, GatewayIntents.allUnprivileged)
     ..onMessageReceived.listen((event) async {
@@ -12,10 +19,16 @@ void main(List<String> argv) {
       final content = msg.content.toLowerCase();
       if (content == 'inspire' ||
           (channel.id == Snowflake(836643866358186046) && content == 'i')) {
-        final pic = (await http.get(api)).body;
-        final embed = EmbedBuilder()..imageUrl = pic;
-        final r = await channel.sendMessage(MessageBuilder.embed(embed));
-        print('Inspired ${a.username}#${a.discriminator} at ${r.url}: $pic');
+        inspire(channel, a.username, a.discriminator);
       }
+    })
+    ..onMessageReactionAdded.listen((event) async {
+      final channel = await event.channel.getOrDownload();
+      // TODO: ask nyxx people if they couldn't conditionally fetch event.message
+      final msg = await channel.fetchMessage(event.messageId);
+      final author = msg.author;
+      final user = await event.user.getOrDownload();
+      if (author.id == Snowflake(836241654557966386) && user.id != author.id)
+        inspire(channel, user.username, user.discriminator);
     });
 }
