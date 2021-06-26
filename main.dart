@@ -12,9 +12,10 @@ void main(List<String> argv) {
       final content = msg.content.toLowerCase();
       if (content == 'inspire' ||
           (channel.id == Snowflake(836643866358186046) && content == 'i')) {
-        final picUrl = (await http.get(api)).body;
-        final r = await channel.sendMessage(content: picUrl);
-        print('Inspired ${a.username}#${a.discriminator} at ${r.url}: $picUrl');
+        final pic = (await http.get(api)).body;
+        final embed = EmbedBuilder()..imageUrl = pic;
+        final r = await channel.sendMessage(MessageBuilder.embed(embed));
+        print('Inspired ${a.username}#${a.discriminator} at ${r.url}: $pic');
       }
     });
 }
