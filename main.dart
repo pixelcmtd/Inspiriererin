@@ -7,7 +7,8 @@ Future<void> inspire(TextChannel c, String u, int d) async {
   final url = (await http.get(api)).body;
   final r = await c.sendMessage(MessageBuilder.content(url));
   r.createReaction(UnicodeEmoji('⏭'));
-  r.createReaction(UnicodeEmoji('❤️'));
+  r.createReaction(UnicodeEmoji('🔼️'));
+  r.createReaction(UnicodeEmoji('🔽'));
   print('Inspired $u#$d at ${r.url}: $url');
 }
 
@@ -31,7 +32,8 @@ void main(List<String> argv) {
       final user = await event.user.getOrDownload();
       if (author.id == Snowflake(836241654557966386) &&
           user.id != author.id &&
-          event.emoji == UnicodeEmoji('⏭'))
+          event.emoji is UnicodeEmoji &&
+          (event.emoji as UnicodeEmoji).code == '⏭')
         inspire(channel, user.username, user.discriminator);
     });
 }
