@@ -7,8 +7,10 @@ Future<void> inspire(TextChannel c, String u, int d) async {
   final url = (await http.get(api)).body;
   final r = await c.sendMessage(MessageBuilder.content(url));
   await r.createReaction(UnicodeEmoji('⏭'));
-  await r.createReaction(UnicodeEmoji('🔼️'));
-  await r.createReaction(UnicodeEmoji('🔽'));
+  Future.delayed(
+      Duration(seconds: 1), () => r.createReaction(UnicodeEmoji('🔼️')));
+  Future.delayed(
+      Duration(seconds: 2), () => r.createReaction(UnicodeEmoji('🔽')));
   print('Inspired $u#$d at ${r.url}: $url');
 }
 
