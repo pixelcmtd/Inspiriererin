@@ -6,11 +6,9 @@ final api = Uri.parse('https://inspirobot.me/api?generate=true');
 Future<void> inspire(TextChannel c, String u, int d) async {
   final url = (await http.get(api)).body;
   final r = await c.sendMessage(MessageBuilder.content(url));
-  await r.createReaction(UnicodeEmoji('⏭'));
-  Future.delayed(
-      Duration(seconds: 1), () => r.createReaction(UnicodeEmoji('🔼')));
-  Future.delayed(
-      Duration(seconds: 2), () => r.createReaction(UnicodeEmoji('🔽')));
+  r.createReaction(UnicodeEmoji('⏭'));
+  r.createReaction(UnicodeEmoji('🔼'));
+  r.createReaction(UnicodeEmoji('🔽'));
   print('Inspired $u#$d at ${r.url}: $url');
 }
 
