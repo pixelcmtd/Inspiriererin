@@ -1,11 +1,11 @@
-import 'package:http/http.dart' as http;
+import 'package:inspirobot/inspirobot.dart';
 import 'package:nyxx/nyxx.dart';
 
-final api = Uri.parse('https://inspirobot.me/api?generate=true');
+final inspirobot = InspiroBot();
 
-Future<void> inspire(TextChannel c, String u, int d) async {
-  final url = (await http.get(api)).body;
-  final r = await c.sendMessage(MessageBuilder.content(url));
+Future<void> inspire(ITextChannel c, String u, int d) async {
+  final url = await inspirobot.generate();
+  final r = await c.sendMessage(MessageBuilder.content(url.toString()));
   await r.createReaction(UnicodeEmoji('⏭'));
   await r.createReaction(UnicodeEmoji('🔼'));
   r.createReaction(UnicodeEmoji('🔽'));
@@ -13,7 +13,12 @@ Future<void> inspire(TextChannel c, String u, int d) async {
 }
 
 void main(List<String> argv) {
-  Nyxx(argv.first, GatewayIntents.allUnprivileged)
+  (NyxxFactory.createNyxxWebsocket(argv.first, GatewayIntents.allUnprivileged)
+        ..registerPlugin(Logging())
+        ..registerPlugin(CliIntegration())
+        ..registerPlugin(IgnoreExceptions())
+        ..connect())
+      .eventsWs
     ..onMessageReceived.listen((event) async {
       final msg = event.message;
       final a = msg.author;
