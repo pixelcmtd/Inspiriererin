@@ -20,11 +20,13 @@ Future<void> inspire(ITextChannel c, String a) async {
 }
 
 Stream<IMessage> accumulateMessagesBefore(IMessage message) async* {
-  final msgs =
-      message.channel.downloadMessages(before: message.id).asBroadcastStream();
-  yield* msgs;
-  if (!(await msgs.isEmpty)) {
-    yield* accumulateMessagesBefore(await msgs.last);
+  final msgs = message.channel.downloadMessages(before: message.id, limit: 100);
+  IMessage? msg;
+  await for (msg in msgs) {
+    yield msg;
+  }
+  if (msg != null) {
+    yield* accumulateMessagesBefore(msg);
   }
 }
 
