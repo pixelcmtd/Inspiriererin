@@ -1,8 +1,30 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:inspirobot/inspirobot.dart';
+import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
+
+// this class is a copy-paste from nyxx:
+// https://github.com/nyxx-discord/nyxx/blob/3c5bc0e45e45f0d76c024292a1059d46981b30e1/lib/src/plugin/plugins/ignore_exception.dart
+class IgnoreNonFatalExceptions extends BasePlugin {
+  @override
+  FutureOr<void> onRegister(INyxx nyxx, Logger logger) {
+    Isolate.current.setErrorsFatal(false);
+    Isolate.current.addErrorListener((ReceivePort()
+          ..listen((err) {
+            final s = err[1] != null ? ". Stacktrace: \n${err[1]}" : "";
+            logger.shout("Got Error: Message: [${err[0]}]$s");
+            if (err[0].startsWith('UnrecoverableNyxxError') ||
+                err[0].startsWith('SocketException')) {
+              Isolate.current.kill();
+            }
+          }))
+        .sendPort);
+  }
+}
 
 final inspirobot = InspiroBot();
 final homechannel = Snowflake(836643866358186046);
@@ -53,7 +75,7 @@ void main(List<String> argv) {
       argv.first, GatewayIntents.allUnprivileged)
     ..registerPlugin(Logging())
     ..registerPlugin(CliIntegration())
-    ..registerPlugin(IgnoreExceptions())
+    ..registerPlugin(IgnoreNonFatalExceptions())
     ..connect();
   client.eventsWs
     ..onRateLimited.listen((event) {

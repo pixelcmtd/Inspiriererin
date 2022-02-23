@@ -7,7 +7,7 @@ environment:
 
 dependencies:
   inspirobot: ^1.0.0
-  nyxx: ^3.2.1
+  nyxx: ^3.2.7
 
 dev_dependencies:
   lints: ^1.0.1
