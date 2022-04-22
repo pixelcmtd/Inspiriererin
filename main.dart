@@ -1,13 +1,35 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:inspirobot/inspirobot.dart';
 import 'package:nyxx/nyxx.dart';
+import 'package:prometheus_client/prometheus_client.dart';
+import 'package:prometheus_client/runtime_metrics.dart' as runtime_metrics;
+import 'package:prometheus_client_shelf/shelf_handler.dart';
+import 'package:shelf/shelf_io.dart';
 
 final inspirobot = InspiroBot();
 final homechannel = Snowflake(836643866358186046);
 final me = Snowflake(836241654557966386);
+
+final inspirations = Counter(
+  name: 'inspiriererin_inspirations',
+  help: 'How many times people were inspired',
+  labelNames: ['author'],
+);
+
+final logs = Counter(
+  name: 'inspiriererin_logs',
+  help: 'How many times people have logged channels',
+  labelNames: ['author'],
+);
+
+final rateLimits = Counter(
+  name: 'inspiriererin_rate_limits',
+  help: 'How many times we got rate limited',
+);
 
 String authorToString(IMessageAuthor a) => '${a.username}#${a.discriminator}';
 
@@ -18,6 +40,7 @@ Future<void> inspire(ITextChannel c, String a) async {
   await r.createReaction(UnicodeEmoji('🔼'));
   r.createReaction(UnicodeEmoji('🔽'));
   print('Inspired $a at ${r.url}: $url');
+  inspirations.labels([a]).inc();
 }
 
 Stream<IMessage> accumulateMessagesBefore(IMessage message) async* {
@@ -37,10 +60,10 @@ Map<String, dynamic> msgToJson(IMessage m) => {
       'created': m.createdAt.toIso8601String(),
       'edited': m.editedTimestamp?.toIso8601String(),
       'attachments': m.attachments
-          .map((m) => {
-                'description': m.description,
-                'name': m.filename,
-                'url': m.url,
+          .map((a) => {
+                'description': a.description,
+                'name': a.filename,
+                'url': a.url,
               })
           .toList(),
     };
@@ -50,6 +73,13 @@ String msgToText(IMessage m) =>
         .replaceRange(20, 25, '');
 
 void main(List<String> argv) {
+  runtime_metrics.register();
+  inspirations.register();
+  logs.register();
+  rateLimits.register();
+  serve(prometheusHandler(), InternetAddress.anyIPv6, 8989).then((s) =>
+      print('Serving metrics at http://${s.address.host}:${s.port}/metrics'));
+
   final client = NyxxFactory.createNyxxWebsocket(
       argv.first, GatewayIntents.allUnprivileged)
     ..registerPlugin(Logging())
@@ -63,7 +93,8 @@ void main(List<String> argv) {
               .fetchChannel(homechannel)
               .then((c) => c as ITextChannel)
               .then((c) => c.sendMessage(MessageBuilder.content(
-                  'Hilfe, ich wurde limitiert! ${event.response}'))));
+                  'Hilfe, ich wurde limitiert! ${event.response}')))
+              .then((_) => rateLimits.inc()));
     })
     ..onMessageReceived.listen((event) async {
       final msg = event.message;
@@ -85,15 +116,17 @@ void main(List<String> argv) {
         print('Logging ${message.channel} for ${authorToString(a)}...');
         final msgs = await accumulateMessagesBefore(message).toList()
           ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-        channel.sendMessage(MessageBuilder()
-          ..addBytesAttachment(
-              utf8.encode(JsonEncoder.withIndent(' ')
-                      .convert(msgs.map(msgToJson).toList()) +
-                  '\n'),
-              '${channel.id.id}.json')
-          ..addBytesAttachment(
-              utf8.encode(msgs.map(msgToText).join('\n') + '\n'),
-              '${channel.id.id}.txt'));
+        channel
+            .sendMessage(MessageBuilder()
+              ..addBytesAttachment(
+                  utf8.encode(JsonEncoder.withIndent(' ')
+                          .convert(msgs.map(msgToJson).toList()) +
+                      '\n'),
+                  '${channel.id.id}.json')
+              ..addBytesAttachment(
+                  utf8.encode(msgs.map(msgToText).join('\n') + '\n'),
+                  '${channel.id.id}.txt'))
+            .then((_) => logs.labels([authorToString(a)]).inc());
       }
     })
     ..onMessageReactionAdded.listen((event) async {
