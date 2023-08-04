@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:args/args.dart';
 import 'package:inspirobot/inspirobot.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:prometheus_client/prometheus_client.dart';
@@ -11,8 +12,6 @@ import 'package:prometheus_client_shelf/shelf_handler.dart';
 import 'package:shelf/shelf_io.dart';
 
 final inspirobot = InspiroBot();
-final homechannel = Snowflake(836643866358186046);
-final me = Snowflake(836241654557966386);
 
 final inspirations = Counter(
   name: 'inspiriererin_inspirations',
@@ -73,20 +72,36 @@ String msgToText(IMessage m) =>
         .replaceRange(20, 25, '');
 
 void main(List<String> argv) {
+  final parser = ArgParser()
+    ..addOption('metrics-port', defaultsTo: '8989', help: 'port for prometheus')
+    ..addOption('home',
+        defaultsTo: '836643866358186046',
+        help: 'channel in which `i` is an alias for `inspire`')
+    ..addOption('self',
+        defaultsTo: '836241654557966386',
+        help: 'id of the bot\'s discord...account?');
+  final args = parser.parse(argv);
+
+  final homechannel = Snowflake(args['home']);
+  final me = Snowflake(args['self']);
+
   runtime_metrics.register();
   inspirations.register();
   logs.register();
   rateLimits.register();
-  serve(prometheusHandler(), InternetAddress.anyIPv6, 8989).then((s) =>
-      print('Serving metrics at http://${s.address.host}:${s.port}/metrics'));
+  serve(prometheusHandler(), InternetAddress.anyIPv6,
+          int.parse(args['metrics-port']))
+      .then((s) => print(
+          'Serving metrics at http://${s.address.host}:${s.port}/metrics'));
 
   final client = NyxxFactory.createNyxxWebsocket(
-      argv.first, GatewayIntents.allUnprivileged)
+      args.rest.first, GatewayIntents.allUnprivileged)
     ..registerPlugin(Logging())
     ..registerPlugin(CliIntegration())
     ..connect();
   client.eventsWs
     ..onRateLimited.listen((event) {
+      print('Rate limited: ${event.response}');
       Future.delayed(
           Duration(seconds: Random().nextInt(60)),
           () => client
@@ -100,6 +115,7 @@ void main(List<String> argv) {
       final msg = event.message;
       final a = msg.author;
       final channel = await msg.channel.getOrDownload();
+      print('${channel.id}: ${authorToString(a)}: ${msg.content}');
       final content = msg.content.toLowerCase();
       if (content == 'inspire' ||
           (channel.id == homechannel && content == 'i')) {
