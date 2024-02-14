@@ -1,3 +1,13 @@
+## 0.3.0
+
+- `nyxx` 6
+- Added support for `INSP_DISCORD_TOKEN` environment variable instead of using args
+- Removed `--self` option, as it isn't really needed
+- Removed rate limiting being logged to home channel
+- Stopped using `inspirobot`, as it seems to have been abandoned and would break
+us now
+- Added `messageContent` intent
+
 ## 0.2.0
 
 - Added CLI arguments to allow you to override `metrics-port`, `self` and `home`
