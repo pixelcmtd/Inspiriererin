@@ -13,4 +13,4 @@ COPY --from=build /app/bin/app /app/bin/
 ENV INSP_DISCORD_TOKEN=
 EXPOSE 8989
 
-CMD ["/app/bin/app"]
+ENTRYPOINT ["/app/bin/app"]

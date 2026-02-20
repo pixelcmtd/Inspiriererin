@@ -12,19 +12,19 @@ import 'package:prometheus_client_shelf/shelf_handler.dart';
 import 'package:shelf/shelf_io.dart';
 
 final inspirations = Counter(
-  name: 'inspiriererin_inspirations',
+  name: 'insp8n_inspirations',
   help: 'How many times people were inspired',
   labelNames: ['author'],
 );
 
 final logs = Counter(
-  name: 'inspiriererin_logs',
+  name: 'insp8n_logs',
   help: 'How many times people have logged channels',
   labelNames: ['author'],
 );
 
 final rateLimits = Counter(
-  name: 'inspiriererin_rate_limits',
+  name: 'insp8n_rate_limits',
   help: 'How many times we got rate limited',
 );
 
@@ -69,7 +69,7 @@ Map<String, dynamic> msgToJson(Message m) => {
           .map((a) => {
                 'description': a.description,
                 'name': a.fileName,
-                'url': a.url,
+                'url': a.url.toString(),
               })
           .toList(),
     };

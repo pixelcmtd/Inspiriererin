@@ -1,3 +1,9 @@
+## 0.3.1
+
+- Change prometheus prefix from `inspiriererin_` to `insp8n_`
+- Fix a bug in the `$ log` command (JSON-encoding `Uri`)
+- Update dependencies
+
 ## 0.3.0
 
 - `nyxx` 6
